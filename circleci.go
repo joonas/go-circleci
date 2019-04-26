@@ -110,13 +110,13 @@ func (c *Client) request(method, path string, responseStruct interface{}, params
 	if params == nil {
 		params = url.Values{}
 	}
-	params.Set("circle-token", c.Token)
 
 	u := c.baseURL().ResolveReference(&url.URL{Path: path, RawQuery: params.Encode()})
 
 	c.debug("building request for %s", u)
 
 	req, err := http.NewRequest(method, u.String(), nil)
+	req.SetBasicAuth(c.Token, "")
 	if err != nil {
 		return err
 	}

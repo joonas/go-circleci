@@ -2,6 +2,7 @@ package circleci
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -93,11 +94,13 @@ func TestClient_request(t *testing.T) {
 	setup()
 	defer teardown()
 	client.Token = "ABCD"
+	encodedToken := base64.StdEncoding.EncodeToString([]byte(client.Token + ":"))
+
 	mux.HandleFunc("/me", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
 		testHeader(t, r, "Accept", "application/json")
 		testHeader(t, r, "Content-Type", "application/json")
-		testQueryIncludes(t, r, "circle-token", "ABCD")
+		testHeader(t, r, "Authorization", fmt.Sprintf("Basic %s", encodedToken))
 		fmt.Fprint(w, `{"login": "jszwedko"}`)
 	})
 
@@ -111,11 +114,12 @@ func TestClient_requestOverridesCircleToken(t *testing.T) {
 	setup()
 	defer teardown()
 	client.Token = "ABCD"
+	encodedToken := base64.StdEncoding.EncodeToString([]byte(client.Token + ":"))
 	mux.HandleFunc("/me", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
 		testHeader(t, r, "Accept", "application/json")
 		testHeader(t, r, "Content-Type", "application/json")
-		testQueryIncludes(t, r, "circle-token", "ABCD")
+		testHeader(t, r, "Authorization", fmt.Sprintf("Basic %s", encodedToken))
 		fmt.Fprint(w, `{"login": "jszwedko"}`)
 	})
 	values := url.Values{}
@@ -132,13 +136,14 @@ func TestClient_request_withDebug(t *testing.T) {
 	defer teardown()
 	buf := bytes.NewBuffer(nil)
 	client.Token = "ABCD"
+	encodedToken := base64.StdEncoding.EncodeToString([]byte(client.Token + ":"))
 	client.Debug = true
 	client.Logger = log.New(buf, "", 0)
 	mux.HandleFunc("/me", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
 		testHeader(t, r, "Accept", "application/json")
 		testHeader(t, r, "Content-Type", "application/json")
-		testQueryIncludes(t, r, "circle-token", "ABCD")
+		testHeader(t, r, "Authorization", fmt.Sprintf("Basic %s", encodedToken))
 		fmt.Fprint(w, `{"login": "jszwedko"}`)
 	})
 
